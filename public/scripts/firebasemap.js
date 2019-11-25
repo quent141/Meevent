@@ -100,8 +100,8 @@ function initMap() {
         if (change.type == 'removed') { deleteMarker(markerIndex); }
 
         if (change.type == 'modified') {
-            deleteMarker(markerIndex);
-            createMarker(change.doc);
+            //deleteMarker(markerIndex);
+            //createMarker(change.doc);
         }
 
         if (change.type == 'added') {
@@ -159,7 +159,7 @@ function initMap() {
     // Attaches an info window to a marker with a message showing info of the event.
     // When the marker is clicked, the info window will show the info. When the map is clicked, the info
     // window/s of selected marker/s will disappear
-    function attachInfo(marker, info, UP, DOWN, ATTEND, event, ) {
+    function attachInfo(marker, info, UP, DOWN, ATTEND, attendnumber, event) {
         var infowindow = new google.maps.InfoWindow({
             content: info
         });
@@ -205,49 +205,87 @@ function initMap() {
         userid = auth.currentUser.uid;
 
         //check
-        var bool_vote = false;
+        var bool_up = false;
+        var bool_down = false;
         var bool_attend = false;
 
         //listeners
         marker.addListener('click', function () {
-            db.collection("events").where("name", "==", event.data().name).where("person", "array-contains", userid).get().then(function (querySnapshot) {
+            db.collection("events").where("name", "==", event.data().name).where("upPerson", "array-contains", userid).get().then(function (querySnapshot) {
                 querySnapshot.forEach(function (doc) {
-                    bool_vote = true;
+                    bool_up = true;
+                    bool_down = false;
                 });
                 document.getElementById(UP).addEventListener("click", function () {
-                    if (bool_vote) {
+                    console.log(bool_up);
+                    console.log(bool_down);
+                    if (bool_up) {
+                        db.collection("events").doc(event.id).update({ upvotes: firebase.firestore.FieldValue.increment(-1), upPerson: firebase.firestore.FieldValue.arrayRemove(userid) });
+                        bool_up = false;
                     } else {
-                        db.collection("events").doc(event.id).update({ upvotes: firebase.firestore.FieldValue.increment(1), person: firebase.firestore.FieldValue.arrayUnion(userid) });
-                        bool_vote = true;
+                        if (bool_down) {
+                            db.collection("events").doc(event.id).update({ downvotes: firebase.firestore.FieldValue.increment(-1), downPerson: firebase.firestore.FieldValue.arrayRemove(userid) });
+                            bool_down = false;
+                        }
+                        db.collection("events").doc(event.id).update({ upvotes: firebase.firestore.FieldValue.increment(1), upPerson: firebase.firestore.FieldValue.arrayUnion(userid) });
+                        bool_up = true;
                     }
+                    db.collection("events").doc(event.id).get().then(function (doc) {
+                        document.getElementById(DOWN).innerHTML = '💩 ' + doc.data().downvotes;
+                        document.getElementById(UP).innerHTML = '🥰 ' + doc.data().upvotes;
+                    });
+                    console.log(bool_up);
+                    console.log(bool_down);
+                });
+            });
+            db.collection("events").where("name", "==", event.data().name).where("downPerson", "array-contains", userid).get().then(function (querySnapshot) {
+                querySnapshot.forEach(function (doc) {
+                    bool_down = true;
                 });
                 document.getElementById(DOWN).addEventListener("click", function () {
-                    if (bool_vote) {
-                        console.log("already");
+                    console.log(bool_up);
+                    console.log(bool_down);
+                    if (bool_down) {
+                        db.collection("events").doc(event.id).update({ downvotes: firebase.firestore.FieldValue.increment(-1), downPerson: firebase.firestore.FieldValue.arrayRemove(userid) });
+                        bool_down = false;
                     } else {
-                        console.log("Not Yet");
-                        db.collection("events").doc(event.id).update({ downvotes: firebase.firestore.FieldValue.increment(1), person: firebase.firestore.FieldValue.arrayUnion(userid) });
-                        bool_vote = true;
+                        if (bool_up) {
+                            db.collection("events").doc(event.id).update({ upvotes: firebase.firestore.FieldValue.increment(-1), upPerson: firebase.firestore.FieldValue.arrayRemove(userid) });
+                            bool_up = false;
+                        }
+                        db.collection("events").doc(event.id).update({ downvotes: firebase.firestore.FieldValue.increment(1), downPerson: firebase.firestore.FieldValue.arrayUnion(userid) });
+                        bool_down = true;
                     }
+                    db.collection("events").doc(event.id).get().then(function (doc) {
+                        document.getElementById(DOWN).innerHTML = '💩 ' + doc.data().downvotes;
+                        document.getElementById(UP).innerHTML = '🥰 ' + doc.data().upvotes;
+                    });
+                    console.log(bool_up);
+                    console.log(bool_down);
                 });
             });
 
-            document.getElementById(ATTEND).addEventListener("click", function () {
-                db.collection("events").where("name", "==", event.data().name).where("attendlist", "array-contains", userid).get().then(function (querySnapshot) {
-                    querySnapshot.forEach(function (doc) {
-                        bool_attend = true;
-                    });
+
+            db.collection("events").where("name", "==", event.data().name).where("attendlist", "array-contains", userid).get().then(function (querySnapshot) {
+                querySnapshot.forEach(function (doc) {
+                    bool_attend = true;
+                });
+                document.getElementById(ATTEND).addEventListener("click", function () {
                     if (bool_attend) {
-                        document.getElementById(ATTEND).innerHTML = "Attended";
-                        console.log("already");
+                        document.getElementById(ATTEND).innerHTML = "Join" + '🎉';
+                        db.collection("events").doc(event.id).update({ joinnumber: firebase.firestore.FieldValue.increment(-1), attendlist: firebase.firestore.FieldValue.arrayRemove(userid) });
+                        bool_attend = false;
                     } else {
-                        document.getElementById(ATTEND).innerHTML = "Attended";
+                        document.getElementById(ATTEND).innerHTML = "Attended" + '🎉';
                         db.collection("events").doc(event.id).update({ joinnumber: firebase.firestore.FieldValue.increment(1), attendlist: firebase.firestore.FieldValue.arrayUnion(userid) });
                         bool_attend = true;
                     }
+                    db.collection("events").doc(event.id).get().then(function (doc) {
+                        document.getElementById(attendnumber).innerHTML = doc.data().joinnumber + '  people Joined';
+                    });
                 });
             });
-        });
+        }, once);
 
 
 
@@ -303,6 +341,7 @@ function initMap() {
                 var UP = 'upvote' + nameEvent;
                 var Down = 'downvote' + nameEvent;
                 var Attend = 'attend' + nameEvent;
+                var attendnumber = 'aNumber' + nameEvent;
                 var infoBox = '<div>' +
                     '<h6>' + nameEvent + '</h6>' +
                     '<div>' +
@@ -310,7 +349,7 @@ function initMap() {
 
                     '<p>' + '</p>' +
                     '<p>' + descriptionEvent + '</p>' +
-                    '<p>' + joinnumber + '  people Joined</p>' +
+                    '<p class="pink-text" id="' + attendnumber + '">' + joinnumber + '  people Joined</p>' +
                     '<p>' + '</p>' +
 
                     '<p>Written by: ' +
@@ -325,7 +364,7 @@ function initMap() {
                     '</div>';
 
                 //Attach an InfoWindow to marker
-                attachInfo(newMarker, infoBox, UP, Down, Attend, event);
+                attachInfo(newMarker, infoBox, UP, Down, Attend, attendnumber, event);
 
                 // Add newMarker to "markers" array
                 markers.push(newMarker);
@@ -513,7 +552,10 @@ function initMap() {
                                 emoji: add_form.select.value,
                                 upvotes: 0,
                                 downvotes: 0,
-                                person: [],
+                                upPerson: [],
+                                downPerson: [],
+                                joinnumber: 1,
+                                attendlist: [auth.currentUser.uid,],
                             }).then(() => {
                                 //success : update the nb of allowed events / total events for the user
                                 currentUser.update({
