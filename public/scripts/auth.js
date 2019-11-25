@@ -25,7 +25,7 @@ adminForm.addEventListener('submit', (e) => {
 //Listen to auth changes
 auth.onAuthStateChanged(user => {
     //User logged-in
-    if (user){
+    if (user) {
 
         user.getIdTokenResult().then(idTokenResult => {
             //Get data
@@ -33,12 +33,12 @@ auth.onAuthStateChanged(user => {
             setupUI(user);
         });
 
-    } else{
+    } else {
         setupUI();
     }
 
     //Update markers
-    setupMarkers(markers,user);
+    setupMarkers(markers, user);
 });
 
 
@@ -51,37 +51,37 @@ signupForm.addEventListener('submit', (e) => {
     const email = signupForm['signup-email'].value;
     const password = signupForm['signup-password'].value;
 
-    if ( signupForm['signup-name'].value.length < 5 || signupForm['signup-name'].value.length > 35
-        || typeof(signupForm['signup-name'].value) != "string") {
+    if (signupForm['signup-name'].value.length < 5 || signupForm['signup-name'].value.length > 35
+        || typeof (signupForm['signup-name'].value) != "string") {
 
         signupForm.querySelector('.error').innerHTML =
             "Your pseudo/name should be a string between 5 and 35 characters long";
 
-    } else if ( signupForm['signup-aboutMe'].value.length > 900
-        || typeof(signupForm['signup-aboutMe'].value) != "string" ){
+    } else if (signupForm['signup-aboutMe'].value.length > 900
+        || typeof (signupForm['signup-aboutMe'].value) != "string") {
 
         signupForm.querySelector('.error').innerHTML =
             "You should input less than 900 characters in your bio";
 
-    } else if ( signupForm['signup-name'].value.includes("<") || signupForm['signup-name'].value.includes("'") ){
+    } else if (signupForm['signup-name'].value.includes("<") || signupForm['signup-name'].value.includes("'")) {
 
         signupForm.querySelector('.error').innerHTML =
             "Sorry, you cannot input the following characters in your name : ' and <";
 
-    } else if ( signupForm['signup-aboutMe'].value.includes("<") || signupForm['signup-aboutMe'].value.includes(">") ){
+    } else if (signupForm['signup-aboutMe'].value.includes("<") || signupForm['signup-aboutMe'].value.includes(">")) {
 
         signupForm.querySelector('.error').innerHTML =
             "Sorry, you cannot input the following characters in the 'about you' section : > and <";
 
     } else {
 
-       // sign-up the user & add firestore data
+        // sign-up the user & add firestore data
         auth.createUserWithEmailAndPassword(email, password).then(cred => {
-
             //Save the aboutMe info of the new user in the 'users' collection
             return db.collection('users').doc(cred.user.uid).set({
                 aboutMe: signupForm['signup-aboutMe'].value,
                 name: signupForm['signup-name'].value,
+                nbEvents: 0,
                 totalNbEvents: 0,
             });
 
@@ -92,10 +92,10 @@ signupForm.addEventListener('submit', (e) => {
             user.updateProfile({
                 displayName: signupForm['signup-name'].value,
                 //photoURL: "https://example.com/jane-q-user/profile.jpg"
-            }).then(function() {
+            }).then(function () {
                 //Update the name in the "account" section
                 setupUI(user);
-            }).catch(function(error) {
+            }).catch(function (error) {
                 // An error happened.
             });
 

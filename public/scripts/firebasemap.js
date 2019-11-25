@@ -10,7 +10,10 @@ const dbclickHideLink = document.querySelectorAll('.dbclickedHide');
 const doubleTapOnTheMapToAdd = document.querySelectorAll('.infoDoubleTap');
 const addEventWarning = document.querySelector('#guide-list');
 let userDetails = document.querySelector('.user-details');
-
+var counter = 0;
+const once = {
+    once: true
+};
 // All the markers are stored inside "markers"
 // Every marker inside this array has a "myOwnProperty" field
 // "myOwnProperty" field is an array with: [idEvent, expirationDate, authorId]
@@ -25,7 +28,7 @@ function initMap() {
 
     var map = new google.maps.Map(document.getElementById('map'), {
         zoom: 15,
-        center: {lat: 36.37, lng: 127.36},
+        center: { lat: 36.37, lng: 127.36 },
         disableDoubleClickZoom: true,
         fullscreenControl: false,
         gestureHandling: 'greedy',
@@ -42,7 +45,7 @@ function initMap() {
 
     // HTML5 geolocation
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
+        navigator.geolocation.getCurrentPosition(function (position) {
 
             var positionNow = {
                 lat: position.coords.latitude,
@@ -61,17 +64,17 @@ function initMap() {
             map.setCenter(positionNow);
             map.setZoom(16);
 
-        }, error =>{
+        }, error => {
             addEventWarning.querySelector('.warning').innerHTML =
                 "An error has occurred while trying to get your location";
         }, {
             enableHighAccuracy: true,
         });
     }
-    else{ alert.log("In order for the app to run easily, please turn on geolocation") }
+    else { alert.log("In order for the app to run easily, please turn on geolocation") }
 
     //Listen for a click on the map
-    map.addListener('click', function() {
+    map.addListener('click', function () {
         //Removes the "delete marker button" from UI
         existingMarkerLink.forEach(item => item.style.display = 'none');
         doubleTapOnTheMapToAdd.forEach(item => item.style.display = 'block');
@@ -90,21 +93,18 @@ function initMap() {
     var mcOptions = {
         imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m',
     };
-    var markerClusterer = new MarkerClusterer(map, markers,mcOptions);
+    var markerClusterer = new MarkerClusterer(map, markers, mcOptions);
 
-    function updateMarker(markerIndex, change){
+    function updateMarker(markerIndex, change) {
 
-        if (change.type == 'removed')
-        {deleteMarker(markerIndex);}
+        if (change.type == 'removed') { deleteMarker(markerIndex); }
 
-        if (change.type == 'modified')
-        {
+        if (change.type == 'modified') {
             deleteMarker(markerIndex);
             createMarker(change.doc);
         }
 
-        if (change.type == 'added')
-        {
+        if (change.type == 'added') {
             //Get the document id of the event
             var id = change.doc.id;
             //Get expiration date of the event
@@ -115,7 +115,7 @@ function initMap() {
             var expiryMs = Math.max(elapsedMs, 0);
 
             //Only Not Expired events are shown on the map
-            if(expiryMs != 0) {
+            if (expiryMs != 0) {
                 createMarker(change.doc);
             }
             //Otherwise we try to delete the expired events
@@ -137,7 +137,7 @@ function initMap() {
                             nbEvents: decrement,
                         });
                     })
-                    .catch(err =>{
+                    .catch(err => {
                         console.log("This events needs to be deleted by another user: ", err)
                     });
             }
@@ -145,7 +145,7 @@ function initMap() {
 
     }
 
-    function deleteMarker(markerIndex){
+    function deleteMarker(markerIndex) {
         var marker = markers[markerIndex];
         //Remove the marker of the map
         marker.setMap(null);
@@ -159,13 +159,13 @@ function initMap() {
     // Attaches an info window to a marker with a message showing info of the event.
     // When the marker is clicked, the info window will show the info. When the map is clicked, the info
     // window/s of selected marker/s will disappear
-    function attachInfo(marker, info) {
+    function attachInfo(marker, info, UP, DOWN, ATTEND, event, ) {
         var infowindow = new google.maps.InfoWindow({
             content: info
         });
 
         //Listen for a click on a Marker
-        marker.addListener('click', function() {
+        marker.addListener('click', function () {
             infowindow.open(marker.get('map'), marker);
             instantClickID = marker.myOwnProperty[0];
 
@@ -173,11 +173,11 @@ function initMap() {
             var authorId = marker.myOwnProperty[2];
             var userId = "";
             //Check if the user is logged-in or not
-            if(auth.currentUser != null){
-                 userId = auth.currentUser.uid;
+            if (auth.currentUser != null) {
+                userId = auth.currentUser.uid;
             }
             //Allows the "delete marker button to appear"
-            if(authorId == userId) {
+            if (authorId == userId) {
                 existingMarkerLink.forEach(item => item.style.display = 'block');
                 doubleTapOnTheMapToAdd.forEach(item => item.style.display = 'none');
             }
@@ -193,51 +193,116 @@ function initMap() {
                 userDetails.innerHTML = html;
             });
 
-        });
+
+        }, once);
 
         map.addListener('click', function () {
             infowindow.close();
         });
+
+        infowindow.open(marker.get('map'), marker);
+        infowindow.close();
+        userid = auth.currentUser.uid;
+
+        //check
+        var bool_vote = false;
+        var bool_attend = false;
+
+        //listeners
+        marker.addListener('click', function () {
+            db.collection("events").where("name", "==", event.data().name).where("person", "array-contains", userid).get().then(function (querySnapshot) {
+                querySnapshot.forEach(function (doc) {
+                    bool_vote = true;
+                });
+                document.getElementById(UP).addEventListener("click", function () {
+                    if (bool_vote) {
+                    } else {
+                        db.collection("events").doc(event.id).update({ upvotes: firebase.firestore.FieldValue.increment(1), person: firebase.firestore.FieldValue.arrayUnion(userid) });
+                        bool_vote = true;
+                    }
+                });
+                document.getElementById(DOWN).addEventListener("click", function () {
+                    if (bool_vote) {
+                        console.log("already");
+                    } else {
+                        console.log("Not Yet");
+                        db.collection("events").doc(event.id).update({ downvotes: firebase.firestore.FieldValue.increment(1), person: firebase.firestore.FieldValue.arrayUnion(userid) });
+                        bool_vote = true;
+                    }
+                });
+            });
+
+            document.getElementById(ATTEND).addEventListener("click", function () {
+                db.collection("events").where("name", "==", event.data().name).where("attendlist", "array-contains", userid).get().then(function (querySnapshot) {
+                    querySnapshot.forEach(function (doc) {
+                        bool_attend = true;
+                    });
+                    if (bool_attend) {
+                        document.getElementById(ATTEND).innerHTML = "Attended";
+                        console.log("already");
+                    } else {
+                        document.getElementById(ATTEND).innerHTML = "Attended";
+                        db.collection("events").doc(event.id).update({ joinnumber: firebase.firestore.FieldValue.increment(1), attendlist: firebase.firestore.FieldValue.arrayUnion(userid) });
+                        bool_attend = true;
+                    }
+                });
+            });
+        });
+
+
+
     }
 
-    function createMarker(event){
+    function createMarker(event) {
 
-            var latEvent = event.data().position._lat;
-            var lngEvent = event.data().position._long;
-            var nameEvent = event.data().name;
-            var descriptionEvent = event.data().description;
-            var timeInfo = event.data().timeInfo;
-            var emoji = event.data().emoji;
-            var expirationDate = event.data().expirationDate;
-            var idEvent = event.id;
-            var authorId = event.data().id;
+        var latEvent = event.data().position._lat;
+        var lngEvent = event.data().position._long;
+        var nameEvent = event.data().name;
+        var descriptionEvent = event.data().description;
+        var timeInfo = event.data().timeInfo;
+        var emoji = event.data().emoji;
+        var expirationDate = event.data().expirationDate;
+        var idEvent = event.id;
+        var authorId = event.data().id;
+        var upvotes = (event.data().upvotes == undefined) ? 0 : event.data().upvotes;
+        var downvotes = (event.data().downvotes == undefined) ? 0 : event.data().downvotes;
+        var joinnumber = (event.data().joinnumber == undefined) ? 1 : event.data().joinnumber;
 
-            var author;
-            var aboutMe;
+
+        var author;
+        var aboutMe;
 
 
-            //Get the user info
-            db.collection('users').doc(authorId).get().then(function (doc) {
-                if (doc.exists) {
-                    aboutMe = doc.data().aboutMe;
-                    author = doc.data().name;
-                } else {
-                    aboutMe = "No bio available";
-                    author = "An unknown artist";
-                }
+        //Get the user info
+        db.collection('users').doc(authorId).get().then(function (doc) {
+            if (doc.exists) {
+                aboutMe = doc.data().aboutMe;
+                author = doc.data().name;
+            } else {
+                aboutMe = "No bio available";
+                author = "An unknown artist";
+            }
 
-                var newMarker = new google.maps.Marker({
-                    position: {lat: latEvent, lng: lngEvent},
-                    map: map,
-                    animation: google.maps.Animation.DROP,
-                    label: {
-                        color: 'black',
-                        text: emoji,
-                    },
-                    myOwnProperty: [idEvent, expirationDate, authorId],
+            var newMarker = new google.maps.Marker({
+                position: { lat: latEvent, lng: lngEvent },
+                map: map,
+                animation: google.maps.Animation.DROP,
+                label: {
+                    color: 'black',
+                    text: emoji,
+                },
+                myOwnProperty: [idEvent, expirationDate, authorId],
+            });
+
+            db.collection("events").where("name", "==", nameEvent).where("attendlist", "array-contains", auth.currentUser.uid).get().then(function (querySnapshot) {
+                var join_atteneded = "Join";
+                querySnapshot.forEach(function (doc) {
+                    join_atteneded = "Attended";
                 });
-
                 //Add Name and Description to InfoBox
+                var UP = 'upvote' + nameEvent;
+                var Down = 'downvote' + nameEvent;
+                var Attend = 'attend' + nameEvent;
                 var infoBox = '<div>' +
                     '<h6>' + nameEvent + '</h6>' +
                     '<div>' +
@@ -245,18 +310,22 @@ function initMap() {
 
                     '<p>' + '</p>' +
                     '<p>' + descriptionEvent + '</p>' +
-
+                    '<p>' + joinnumber + '  people Joined</p>' +
                     '<p>' + '</p>' +
 
                     '<p>Written by: ' +
                     '<a href="#" class="blue-text modal-trigger" data-target="modal-user">' +
                     author + '</a>' +
                     '</p>' +
+
                     '</div>' +
+                    '<button id="' + UP + '">' + '🥰 ' + upvotes + '' + '</button>        ' +
+                    '<button id="' + Down + '">' + '💩 ' + downvotes + '' + '</button></br>' +
+                    '<button id="' + Attend + '">' + join_atteneded + '🎉' + '</button > ' +
                     '</div>';
 
                 //Attach an InfoWindow to marker
-                attachInfo(newMarker, infoBox);
+                attachInfo(newMarker, infoBox, UP, Down, Attend, event);
 
                 // Add newMarker to "markers" array
                 markers.push(newMarker);
@@ -266,9 +335,10 @@ function initMap() {
                 markerClusterer.addMarkers(markers);
 
 
-            }).catch(function (error) {
-                //Error getting the author/bio of the event
             });
+        }).catch(function (error) {
+            //Error getting the author/bio of the event
+        });
 
     }
 
@@ -287,7 +357,7 @@ function initMap() {
 
             markers.forEach(marker => {
                 //Check if marker already exist (modified or deleted marker)
-                if ( marker.myOwnProperty[0] == change.doc.id ) {
+                if (marker.myOwnProperty[0] == change.doc.id) {
                     //Keep track of the existing marker's index
                     markerIndex = markers.indexOf(marker);
                 }
@@ -305,7 +375,7 @@ function initMap() {
     /////////////////////////////////////////////////////////////////////////////////////
 
     //Function to remove expired markers from map
-    function handleExpiredMarker(){
+    function handleExpiredMarker() {
 
         markers.forEach(marker => {
 
@@ -321,7 +391,7 @@ function initMap() {
             var expiryMs = Math.max(elapsedMs, 0);
 
             //Expired event
-            if(expiryMs == 0) {
+            if (expiryMs == 0) {
                 //Tries to delete marker from Database (NEED LOGIN)
                 var user;
                 var currentUser;
@@ -363,11 +433,11 @@ function initMap() {
 
     //Create a new invisible marker (not linked to map)
     var marker = new google.maps.Marker({
-        position: {lat:0,lng:0},
+        position: { lat: 0, lng: 0 },
         draggable: true,
         title: "Drag me to your event!",
         icon: "/images/blue-marker.png",
-        animation : null
+        animation: null
     });
 
     //Attach InfoWindow to marker to explain how to create a new event
@@ -377,7 +447,7 @@ function initMap() {
 
 
     //Add event to Database
-    add_form.addEventListener('submit', (e) =>{
+    add_form.addEventListener('submit', (e) => {
         //Prevent reloading the page
         e.preventDefault();
         //Remove the marker of adding an event (blue one)
@@ -405,6 +475,7 @@ function initMap() {
         //Get the nb of events already displayed by the user
         currentUser.get().then(doc => {
             nbEvents = doc.data().nbEvents;
+            console.log("this is how many event have benn create" + nbEvents);
 
             //CANNOT POST IF 3 EVENTS ARE ALREADY POSTED BY THE USER
             if (nbEvents < 3) {
@@ -424,7 +495,7 @@ function initMap() {
                         //CHECK DANGEROUS CHARACTERS
                         if (add_form.name.value.includes("<") ||
                             add_form.description.value.includes("<") ||
-                            add_form.timeInfo.value.includes("<") ) {
+                            add_form.timeInfo.value.includes("<")) {
 
                             addEventWarning.querySelector('.warning').innerHTML =
                                 "Sorry, you cannot input the following character in the forms: <";
@@ -440,11 +511,14 @@ function initMap() {
                                     marker.position.lng()),
                                 id: auth.currentUser.uid,
                                 emoji: add_form.select.value,
+                                upvotes: 0,
+                                downvotes: 0,
+                                person: [],
                             }).then(() => {
                                 //success : update the nb of allowed events / total events for the user
                                 currentUser.update({
                                     nbEvents: increment,
-                                    totalNbEvents : increment
+                                    totalNbEvents: increment
                                 });
 
                             }).catch((err) => {
@@ -473,14 +547,14 @@ function initMap() {
                 addEventWarning.querySelector('.warning').innerHTML = 'Sorry, you cannot post more than 3 events';
             }
 
-        }).catch( err => {
+        }).catch(err => {
             //Not possible to create an event
             console.log(err);
         });
     });
 
     //Delete event from Database
-    del_form.addEventListener('submit', (e) =>{
+    del_form.addEventListener('submit', (e) => {
         //Prevent reloading the page
         e.preventDefault();
 
@@ -500,16 +574,16 @@ function initMap() {
                     nbEvents: decrement,
                 });
             }).catch((err) => {
-            console.log("fail delete: ", err);
-        }, err => {
+                console.log("fail delete: ", err);
+            }, err => {
                 console.log("error: ", err)
-        });
+            });
         existingMarkerLink.forEach(item => item.style.display = 'none');
         doubleTapOnTheMapToAdd.forEach(item => item.style.display = 'block');
     });
 
     //Remove the marker of adding an event (blue one)
-    new_del_form.addEventListener('submit', (e) =>{
+    new_del_form.addEventListener('submit', (e) => {
         //Prevent reloading the page
         e.preventDefault();
         marker.setMap(null);
@@ -525,7 +599,7 @@ function initMap() {
     const dbclickLink = document.querySelectorAll('.dbclicked');
 
     //Listen for a double click on the map to add potential new event
-    map.addListener('dblclick', function(e) {
+    map.addListener('dblclick', function (e) {
 
         //Remove from the map previous markers if there were some
         marker.setMap(null);
@@ -537,7 +611,7 @@ function initMap() {
         marker.setMap(map);
 
         //Check marker's position at any time
-        marker.addListener('dragend', function(e) {
+        marker.addListener('dragend', function (e) {
 
         });
 
@@ -547,7 +621,7 @@ function initMap() {
     });
 
     //Listen for a click on the potential new events' marker (added with double click)
-    marker.addListener('click', function() {
+    marker.addListener('click', function () {
         window.open(marker.get('map'), marker);
         existingMarkerLink.forEach(item => item.style.display = 'none');
     });
@@ -576,7 +650,7 @@ const setupMarkers = (markers, user) => {
             if (markerId == user.uid) {
                 //set special
                 markers[i].setIcon("/images/my-marker.png");
-            }else {
+            } else {
                 //otherwise : set default
                 markers[i].setIcon();
             }
@@ -628,7 +702,7 @@ function CenterControl(controlDiv, map) {
 
 
     // Setup the click event listeners: simply set the map to user location
-    controlUI.addEventListener('click', function() {
+    controlUI.addEventListener('click', function () {
 
         // HTML5 geolocation
         if (navigator.geolocation) {
@@ -656,9 +730,10 @@ function CenterControl(controlDiv, map) {
             }, {
                 enableHighAccuracy: true,
             });
-        } else { addEventWarning.querySelector('.warning').innerHTML =
-            "You need to turn on geolocation on your device or web browser in order for us to help you " +
-            "find events around you"
+        } else {
+            addEventWarning.querySelector('.warning').innerHTML =
+                "You need to turn on geolocation on your device or web browser in order for us to help you " +
+                "find events around you"
         }
     });
 
@@ -675,3 +750,5 @@ function CenterControl(controlDiv, map) {
 
 //Don't add expired data in createMarker()
 //SetInterval 1minute after
+
+
