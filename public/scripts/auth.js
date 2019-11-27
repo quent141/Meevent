@@ -26,19 +26,17 @@ adminForm.addEventListener('submit', (e) => {
 auth.onAuthStateChanged(user => {
     //User logged-in
     if (user) {
-
         user.getIdTokenResult().then(idTokenResult => {
             //Get data
             user.admin = idTokenResult.claims.admin;
             setupUI(user);
+            setupMarker_login(markers, user);
         });
 
     } else {
         setupUI();
+        setupMarker_logout(markers);
     }
-
-    //Update markers
-    setupMarkers(markers, user);
 });
 
 
@@ -95,10 +93,10 @@ signupForm.addEventListener('submit', (e) => {
             }).then(function () {
                 //Update the name in the "account" section
                 setupUI(user);
+                location.reload();
             }).catch(function (error) {
                 // An error happened.
             });
-
 
             const modal = document.querySelector('#modal-signup');
             //Close the modal after signing in
@@ -118,6 +116,7 @@ const logout = document.querySelector('#logout');
 logout.addEventListener('click', (e) => {
     e.preventDefault();
     auth.signOut();
+    location.reload();
 });
 
 
@@ -138,6 +137,7 @@ loginForm.addEventListener('submit', (e) => {
         //Clear the logging fields
         loginForm.reset();
         loginForm.querySelector('.error').innerHTML = '';
+        location.reload();
     }).catch(err => {
         loginForm.querySelector('.error').innerHTML = err.message;
     });

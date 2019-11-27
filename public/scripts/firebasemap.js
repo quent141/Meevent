@@ -102,6 +102,7 @@ function initMap() {
         if (change.type == 'modified') {
             //deleteMarker(markerIndex);
             //createMarker(change.doc);
+            console.log("MODIFIED");
         }
 
         if (change.type == 'added') {
@@ -202,7 +203,9 @@ function initMap() {
 
         infowindow.open(marker.get('map'), marker);
         infowindow.close();
-        userid = auth.currentUser.uid;
+
+
+
 
         //check
         var bool_up = false;
@@ -211,83 +214,85 @@ function initMap() {
 
         //listeners
         marker.addListener('click', function () {
-            db.collection("events").where("name", "==", event.data().name).where("upPerson", "array-contains", userid).get().then(function (querySnapshot) {
-                querySnapshot.forEach(function (doc) {
-                    bool_up = true;
-                    bool_down = false;
-                });
-                document.getElementById(UP).addEventListener("click", function () {
-                    console.log(bool_up);
-                    console.log(bool_down);
-                    if (bool_up) {
-                        db.collection("events").doc(event.id).update({ upvotes: firebase.firestore.FieldValue.increment(-1), upPerson: firebase.firestore.FieldValue.arrayRemove(userid) });
-                        bool_up = false;
-                    } else {
-                        if (bool_down) {
-                            db.collection("events").doc(event.id).update({ downvotes: firebase.firestore.FieldValue.increment(-1), downPerson: firebase.firestore.FieldValue.arrayRemove(userid) });
-                            bool_down = false;
-                        }
-                        db.collection("events").doc(event.id).update({ upvotes: firebase.firestore.FieldValue.increment(1), upPerson: firebase.firestore.FieldValue.arrayUnion(userid) });
+            if (auth.currentUser != null) {
+                var userid = auth.currentUser.uid;
+                db.collection("events").where("name", "==", event.data().name).where("upPerson", "array-contains", userid).get().then(function (querySnapshot) {
+                    querySnapshot.forEach(function (doc) {
                         bool_up = true;
-                    }
-                    db.collection("events").doc(event.id).get().then(function (doc) {
-                        document.getElementById(DOWN).innerHTML = '💩 ' + doc.data().downvotes;
-                        document.getElementById(UP).innerHTML = '🥰 ' + doc.data().upvotes;
-                    });
-                    console.log(bool_up);
-                    console.log(bool_down);
-                });
-            });
-            db.collection("events").where("name", "==", event.data().name).where("downPerson", "array-contains", userid).get().then(function (querySnapshot) {
-                querySnapshot.forEach(function (doc) {
-                    bool_down = true;
-                });
-                document.getElementById(DOWN).addEventListener("click", function () {
-                    console.log(bool_up);
-                    console.log(bool_down);
-                    if (bool_down) {
-                        db.collection("events").doc(event.id).update({ downvotes: firebase.firestore.FieldValue.increment(-1), downPerson: firebase.firestore.FieldValue.arrayRemove(userid) });
                         bool_down = false;
-                    } else {
+                    });
+                    document.getElementById(UP).addEventListener("click", function () {
+                        console.log(bool_up);
+                        console.log(bool_down);
                         if (bool_up) {
                             db.collection("events").doc(event.id).update({ upvotes: firebase.firestore.FieldValue.increment(-1), upPerson: firebase.firestore.FieldValue.arrayRemove(userid) });
                             bool_up = false;
+                        } else {
+                            if (bool_down) {
+                                db.collection("events").doc(event.id).update({ downvotes: firebase.firestore.FieldValue.increment(-1), downPerson: firebase.firestore.FieldValue.arrayRemove(userid) });
+                                bool_down = false;
+                            }
+                            db.collection("events").doc(event.id).update({ upvotes: firebase.firestore.FieldValue.increment(1), upPerson: firebase.firestore.FieldValue.arrayUnion(userid) });
+                            bool_up = true;
                         }
-                        db.collection("events").doc(event.id).update({ downvotes: firebase.firestore.FieldValue.increment(1), downPerson: firebase.firestore.FieldValue.arrayUnion(userid) });
+
+                        db.collection("events").doc(event.id).get().then(function (doc) {
+                            document.getElementById(DOWN).innerHTML = '💩 ' + doc.data().downvotes;
+                            document.getElementById(UP).innerHTML = '🥰 ' + doc.data().upvotes;
+                        });
+                        console.log(bool_up);
+                        console.log(bool_down);
+                    });
+                });
+                db.collection("events").where("name", "==", event.data().name).where("downPerson", "array-contains", userid).get().then(function (querySnapshot) {
+                    querySnapshot.forEach(function (doc) {
                         bool_down = true;
-                    }
-                    db.collection("events").doc(event.id).get().then(function (doc) {
-                        document.getElementById(DOWN).innerHTML = '💩 ' + doc.data().downvotes;
-                        document.getElementById(UP).innerHTML = '🥰 ' + doc.data().upvotes;
                     });
-                    console.log(bool_up);
-                    console.log(bool_down);
+                    document.getElementById(DOWN).addEventListener("click", function () {
+                        console.log(bool_up);
+                        console.log(bool_down);
+                        if (bool_down) {
+                            db.collection("events").doc(event.id).update({ downvotes: firebase.firestore.FieldValue.increment(-1), downPerson: firebase.firestore.FieldValue.arrayRemove(userid) });
+                            bool_down = false;
+                        } else {
+                            if (bool_up) {
+                                db.collection("events").doc(event.id).update({ upvotes: firebase.firestore.FieldValue.increment(-1), upPerson: firebase.firestore.FieldValue.arrayRemove(userid) });
+                                bool_up = false;
+                            }
+                            db.collection("events").doc(event.id).update({ downvotes: firebase.firestore.FieldValue.increment(1), downPerson: firebase.firestore.FieldValue.arrayUnion(userid) });
+                            bool_down = true;
+                        }
+                        db.collection("events").doc(event.id).get().then(function (doc) {
+                            document.getElementById(DOWN).innerHTML = '💩 ' + doc.data().downvotes;
+                            document.getElementById(UP).innerHTML = '🥰 ' + doc.data().upvotes;
+                        });
+                        console.log(bool_up);
+                        console.log(bool_down);
+                    });
                 });
-            });
 
 
-            db.collection("events").where("name", "==", event.data().name).where("attendlist", "array-contains", userid).get().then(function (querySnapshot) {
-                querySnapshot.forEach(function (doc) {
-                    bool_attend = true;
-                });
-                document.getElementById(ATTEND).addEventListener("click", function () {
-                    if (bool_attend) {
-                        document.getElementById(ATTEND).innerHTML = "Join" + '🎉';
-                        db.collection("events").doc(event.id).update({ joinnumber: firebase.firestore.FieldValue.increment(-1), attendlist: firebase.firestore.FieldValue.arrayRemove(userid) });
-                        bool_attend = false;
-                    } else {
-                        document.getElementById(ATTEND).innerHTML = "Attended" + '🎉';
-                        db.collection("events").doc(event.id).update({ joinnumber: firebase.firestore.FieldValue.increment(1), attendlist: firebase.firestore.FieldValue.arrayUnion(userid) });
+                db.collection("events").where("name", "==", event.data().name).where("attendlist", "array-contains", userid).get().then(function (querySnapshot) {
+                    querySnapshot.forEach(function (doc) {
                         bool_attend = true;
-                    }
-                    db.collection("events").doc(event.id).get().then(function (doc) {
-                        document.getElementById(attendnumber).innerHTML = doc.data().joinnumber + '  people Joined';
+                    });
+                    document.getElementById(ATTEND).addEventListener("click", function () {
+                        if (bool_attend) {
+                            document.getElementById(ATTEND).innerHTML = "Join" + '🎉';
+                            db.collection("events").doc(event.id).update({ joinnumber: firebase.firestore.FieldValue.increment(-1), attendlist: firebase.firestore.FieldValue.arrayRemove(userid) });
+                            bool_attend = false;
+                        } else {
+                            document.getElementById(ATTEND).innerHTML = "Attended" + '🎉';
+                            db.collection("events").doc(event.id).update({ joinnumber: firebase.firestore.FieldValue.increment(1), attendlist: firebase.firestore.FieldValue.arrayUnion(userid) });
+                            bool_attend = true;
+                        }
+                        db.collection("events").doc(event.id).get().then(function (doc) {
+                            document.getElementById(attendnumber).innerHTML = doc.data().joinnumber + '  people Joined';
+                        });
                     });
                 });
-            });
+            }
         }, once);
-
-
 
     }
 
@@ -306,12 +311,10 @@ function initMap() {
         var downvotes = (event.data().downvotes == undefined) ? 0 : event.data().downvotes;
         var joinnumber = (event.data().joinnumber == undefined) ? 1 : event.data().joinnumber;
 
-
+        //Get the user info
         var author;
         var aboutMe;
 
-
-        //Get the user info
         db.collection('users').doc(authorId).get().then(function (doc) {
             if (doc.exists) {
                 aboutMe = doc.data().aboutMe;
@@ -322,7 +325,7 @@ function initMap() {
             }
 
             var newMarker = new google.maps.Marker({
-                position: { lat: latEvent, lng: lngEvent },
+                position: {lat: latEvent, lng: lngEvent},
                 map: map,
                 animation: google.maps.Animation.DROP,
                 label: {
@@ -332,16 +335,69 @@ function initMap() {
                 myOwnProperty: [idEvent, expirationDate, authorId],
             });
 
-            db.collection("events").where("name", "==", nameEvent).where("attendlist", "array-contains", auth.currentUser.uid).get().then(function (querySnapshot) {
-                var join_atteneded = "Join";
-                querySnapshot.forEach(function (doc) {
-                    join_atteneded = "Attended";
+
+            //IF logged-in
+            if (auth.currentUser != null) {
+
+                db.collection("events").where("name", "==", nameEvent).where("attendlist", "array-contains", auth.currentUser.uid).get().then(function (querySnapshot) {
+
+                    var join_atteneded = "Join";
+                    querySnapshot.forEach(function (doc) {
+                        join_atteneded = "Attended";
+                    });
+                    //Add Name and Description to InfoBox
+                    var UP = 'upvote' + nameEvent;
+                    var Down = 'downvote' + nameEvent;
+                    var Attend = 'attend' + nameEvent;
+                    var attendnumber = 'aNumber' + nameEvent;
+
+                    var infoBox = '<div>' +
+                        '<h6>' + nameEvent + '</h6>' +
+                        '<div>' +
+                        '<p class="pink-text">Time info: <b>' + timeInfo + '</b></p>' +
+
+                        '<p>' + '</p>' +
+                        '<p>' + descriptionEvent + '</p>' +
+                        '<p>' + '</p>' +
+
+                        '<p>Written by: ' +
+                        '<a href="#" class="blue-text modal-trigger" data-target="modal-user">' +
+                        author + '</a>' +
+                        '</p>' +
+                        '<p class="pink-text" id="' + attendnumber + '">' + joinnumber + '  people Joined</p>' +
+
+                        '<div style="justify-content: flex-start; display: flex;">' +
+                        '<button id="' + UP + '" class="btn blue left">' + '🥰 ' + upvotes + '' + '</button>        ' +
+                        '<button id="' + Down + '" class="btn red right">' + '💩 ' + downvotes + '' + '</button></br>' +
+                        '</div>' +
+
+                        '<div style="margin-top:5px; justify-content: flex-start; display: flex;">' +
+                        '<p></p>' +
+                        '<button id="' + Attend + '" class="btn yellow darken-2 center" style="margin-bottom:20px;">' + join_atteneded + '🎉' + '</button > ' +
+                        '</div>';
+
+                    //Attach an InfoWindow to marker
+                    attachInfo(newMarker, infoBox, UP, Down, Attend, attendnumber, event);
+
+                    //Setup the marker correctly
+                    //setupMarkers(markers, auth.currentUser);
+                    // Add newMarker to "markers" array
+                    markers.push(newMarker);
+                    //Setup the markers UI depending on Log In or not
+                    setupMarker_login(markers, auth.currentUser);
+                    //Update the cluster of markers
+                    markerClusterer.addMarkers(markers);
                 });
+            }
+
+            //If logged-out
+            else {
                 //Add Name and Description to InfoBox
                 var UP = 'upvote' + nameEvent;
                 var Down = 'downvote' + nameEvent;
-                var Attend = 'attend' + nameEvent;
                 var attendnumber = 'aNumber' + nameEvent;
+
+
                 var infoBox = '<div>' +
                     '<h6>' + nameEvent + '</h6>' +
                     '<div>' +
@@ -349,37 +405,52 @@ function initMap() {
 
                     '<p>' + '</p>' +
                     '<p>' + descriptionEvent + '</p>' +
-                    '<p class="pink-text" id="' + attendnumber + '">' + joinnumber + '  people Joined</p>' +
                     '<p>' + '</p>' +
 
                     '<p>Written by: ' +
                     '<a href="#" class="blue-text modal-trigger" data-target="modal-user">' +
                     author + '</a>' +
                     '</p>' +
+                    '<p class="pink-text" id="' + attendnumber + '">' + joinnumber + '  people Joined</p>' +
 
-                    '</div>' +
-                    '<button id="' + UP + '">' + '🥰 ' + upvotes + '' + '</button>        ' +
-                    '<button id="' + Down + '">' + '💩 ' + downvotes + '' + '</button></br>' +
-                    '<button id="' + Attend + '">' + join_atteneded + '🎉' + '</button > ' +
+                    '<div style="justify-content: flex-start; display: flex;">' +
+                    '<button id="' + UP + '" class="btn blue left">' + '🥰 ' + upvotes + '' + '</button>' +
+                    '<button id="' + Down + '" class="btn red right" style="margin-bottom:20px;">' + '💩 ' + downvotes + '' + '</button></br>' +
                     '</div>';
 
                 //Attach an InfoWindow to marker
-                attachInfo(newMarker, infoBox, UP, Down, Attend, attendnumber, event);
+                attachInfo(newMarker, infoBox);
 
                 // Add newMarker to "markers" array
                 markers.push(newMarker);
-                setupMarkers(markers, auth.currentUser);
-
                 //Update the cluster of markers
                 markerClusterer.addMarkers(markers);
+            }
 
-
-            });
         }).catch(function (error) {
             //Error getting the author/bio of the event
         });
 
     }
+
+/*    const attachInfo_toLogin =
+        (markers, nameEvent, timeInfo, descriptionEvent, author, joinnumber, upvotes, downvotes, join_atteneded) => {
+
+        console.log('logged in');
+        //loop all markers
+        for (let i = 0; i < markers.length; i++) {
+
+        }
+    };
+
+    const attachInfo_toLogout =
+        (markers, nameEvent, timeInfo, descriptionEvent, author, joinnumber, upvotes, downvotes) => {
+        console.log('logged out');
+        //loop all marker
+        for (let i = 0; i < markers.length; i++) {
+
+        }
+    };*/
 
     /////////////////////////////////////////////////////////////////////////////////////
     ////////////             REAL TIME UPDATE FROM DATABASE               ///////////////
@@ -679,7 +750,8 @@ function placeMarkerAndPanTo(latLng, map, marker) {
     map.panTo(latLng);
 }
 
-const setupMarkers = (markers, user) => {
+
+/*const setupMarkers = (markers, user) => {
 
     //Checks if user is logged in
     if (user) {
@@ -707,6 +779,31 @@ const setupMarkers = (markers, user) => {
         }
     }
 
+};*/
+
+const setupMarker_login = (markers, user) => {
+    console.log('logged in');
+    //loop all markers
+    for (let i = 0; i < markers.length; i++) {
+
+        let markerId = markers[i].myOwnProperty[2];
+        //Finds the user own markers
+        if (markerId == user.uid) {
+            //set special
+            markers[i].setIcon("/images/my-marker.png");
+        } else {
+            //otherwise : set default
+            markers[i].setIcon();
+        }
+    }
+};
+
+const setupMarker_logout = (markers) => {
+    console.log('logged out');
+    for (let i = 0; i < markers.length; i++) {
+        //set default
+        markers[i].setIcon();
+    }
 };
 
 

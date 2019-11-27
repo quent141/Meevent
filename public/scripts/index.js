@@ -14,8 +14,7 @@ const setupUI = (user) => {
         }
 
         //Grabs user information from the 'users' collection
-        db.collection('users').doc(user.uid).get().then(doc => {
-
+        db.collection('users').doc(user.uid).onSnapshot(doc => {
             const html = `<h4>${user.displayName}</h4>
             <div style="margin-top:40px;"><b>mail: </b>${user.email}</div>
             <div style="margin-top:20px;"><b>About me: </b>${doc.data().aboutMe}</div>

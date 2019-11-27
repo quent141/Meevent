@@ -2,8 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/eventMap.iml" filepath="$PROJECT_DIR$/.idea/eventMap.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../firebase-auth/.idea/firebase-auth.iml" filepath="$PROJECT_DIR$/../firebase-auth/.idea/firebase-auth.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/eventMap2.0.iml" filepath="$PROJECT_DIR$/.idea/eventMap2.0.iml" />
     </modules>
   </component>
 </project>
